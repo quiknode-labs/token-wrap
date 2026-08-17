@@ -41,12 +41,13 @@ git rev-parse --verify HEAD
 git rev-parse HEAD^{tree}
 git show --no-patch --format='%H %cI %s' 81adb66daa1405eb1568af8b74f5c30924655bd6
 rustc --version
+rustup run nightly-2026-01-22 rustc --version
 solana --version
 cargo build-sbf --version
 pnpm --version
 ```
 
-The first `test` is a hard gate: staged, unstaged, and untracked source must all be absent. Required versions are host Rust `1.93.1`, Solana CLI and `cargo-build-sbf` `4.1.0`, `platform-tools v1.54` with its SBF `rustc 1.89.0`, and pnpm `10.15.1`. A different SBF builder or platform-tools compiler is a different artifact provenance and cannot close the deployment gate.
+The first `test` is a hard gate: staged, unstaged, and untracked source must all be absent. Required versions are host Rust `1.93.1`, Rust nightly `nightly-2026-01-22` for test/lint gates, Solana CLI and `cargo-build-sbf` `4.1.0`, `platform-tools v1.54` with its SBF `rustc 1.89.0`, and pnpm `10.15.1`. A different SBF builder or platform-tools compiler is a different artifact provenance and cannot close the deployment gate.
 
 ## 2. Regenerate and verify source contracts
 

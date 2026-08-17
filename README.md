@@ -65,6 +65,7 @@ The k256 experiment admits only an exact fee-free, non-rebasing, non-hooked, non
 Required toolchains are pinned in the repository:
 
 - Rust `1.93.1` (`rust-toolchain.toml`);
+- Rust nightly `nightly-2026-01-22` for the repository test/lint gates (`Makefile`);
 - Solana CLI `4.1.0` (`Cargo.toml` workspace metadata and `Makefile`);
 - pnpm `10.15.1` (`package.json`).
 
