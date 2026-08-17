@@ -6,19 +6,30 @@ pWrap is the k256-maintained fork of the Solana Program Token Wrap implementatio
 
 ## Deployment identity
 
-| Item | Value |
-| --- | --- |
-| pWrap program ID | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` |
-| K256 fork | <https://github.com/quiknode-labs/token-wrap> |
-| Upstream | <https://github.com/solana-program/token-wrap> |
-| Upstream baseline | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6) |
-| IDL | [`idl.json`](./idl.json) |
+| Item                     | Value                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| pWrap program ID         | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2`                                                                                              |
+| Deployment scope         | Devnet only                                                                                                                                |
+| Devnet genesis           | `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`                                                                                             |
+| Devnet upgrade authority | `G1kdS4CCCKZFKzupAm9N5ZLMvx5bgfzpUx9xkmt1KxYR`                                                                                             |
+| K256 fork                | <https://github.com/quiknode-labs/token-wrap>                                                                                              |
+| Upstream                 | <https://github.com/solana-program/token-wrap>                                                                                             |
+| Upstream baseline        | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6) |
+| IDL                      | [`idl.json`](./idl.json)                                                                                                                   |
 
-The program-account keypair derives the same intended address for devnet, testnet, and mainnet because each Solana cluster has an independent address space. No deployment is performed by this repository change. Devnet is the first intended deployment and requires a separate explicit authorization.
+`pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` is the permanent devnet address. The initial deployment uses the matching program-account keypair; every later upgrade targets the literal public address and does not replace it. Testnet and mainnet deployment are outside this fork's current authorization and runbook.
 
 The upstream `TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR` address is not used by pWrap. Changing the program ID changes every program-derived wrapped mint, authority, backpointer, canonical pointer, and escrow address.
 
-The program-account keypair is operator key material. It must stay outside this public repository; only the public program ID above belongs in source control.
+The program-account and upgrade-authority keypairs are operator key material. They must stay outside this public repository. The program-account keypair is retained for identity recovery, but it is not the fee payer or upgrade authority and is not needed for normal devnet upgrades.
+
+## Permanent devnet identity
+
+All Rust, IDL, JavaScript, CLI, and PDA derivations remain pinned to the pWrap address above. The supported lifecycle is initial deploy once, then upgrade that same address. A replacement program ID is not a pWrap upgrade.
+
+The program must remain upgradeable, so neither deployment with `--final` nor removal of the upgrade authority is allowed. Any `solana program close` operation targeting the pWrap Program or ProgramData accounts is forbidden. `CloseStuckEscrow` is unrelated: it can close only a zero-balance token escrow ATA after validating the documented stuck-escrow conditions; it cannot close the program.
+
+The upgradeable loader does not provide a permission that allows upgrades while cryptographically forbidding closure. A raw upgrade-authority signer can technically upgrade, rotate, finalize, or close the program. Until that authority is transferred to a governance controller that enforces a narrower policy, “never close” is a key-custody and operator invariant. Authority loss makes future upgrades impossible; compromise exposes the program-controlled escrow and issuance logic.
 
 ## Provenance and security status
 
@@ -58,7 +69,7 @@ When the wrapped mint uses Token-2022, the default mint customizer initializes:
 
 pWrap itself implements public wrap and unwrap. Configure-account, deposit, confidential transfer, apply-pending-balance, and withdraw are Token-2022 operations and use the relevant proof programs. Moving into or out of pWrap escrow is public; the wrapper does not make the boundary transaction confidential.
 
-The k256 experiment admits only an exact fee-free, non-rebasing, non-hooked, non-freezable valueless devnet fixture. The general upstream ABI remains available, but broader asset admission is a separate security and product decision.
+K256 will create, sponsor, canonicalize, document, and test only an exact fee-free, non-rebasing, non-hooked, non-freezable valueless devnet fixture. The permissionless program has no asset allowlist, so this operating policy cannot prevent third-party invocation. Broader K256 asset support is a separate security and product decision.
 
 ## Build and test
 
@@ -87,7 +98,7 @@ pnpm --dir clients/js build
 
 Unlike the upstream snapshot, the generated contract and CLI both expose `SetCanonicalPointer`. The JavaScript test is no longer a no-op: it verifies the pWrap identity, all seven discriminators, the instruction/account codecs, and a canonical-pointer PDA against an independent Solana CLI derivation.
 
-For key verification, artifact checks, cluster identity checks, and the intentionally gated deployment command, see [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+For initial deployment, future upgrades, key boundaries, artifact checks, cluster proof, and permanent-address safeguards, see [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
 ## Upstream maintenance
 
@@ -99,13 +110,13 @@ git log --oneline --left-right main...upstream/main
 git merge upstream/main
 ```
 
-After every upstream merge, restore and verify the pWrap program ID, regenerate clients, run the full checks above, and produce a new binary hash and security review scope.
+After every upstream merge, restore and verify the pWrap program ID, regenerate clients, run the full checks above, and produce a new binary hash and security review scope. An upstream merge is deployed only as an upgrade of the existing devnet address.
 
 ## Upstream audit lineage
 
-| Auditor | Date | Upstream version | Report |
-| --- | --- | --- | --- |
-| Zellic | 2025-05-16 | [`75c5529`](https://github.com/solana-program/token-wrap/tree/75c5529d5a191f12bd58b6b92ca0104ce3464763) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/ZellicTokenWrapAudit-2025-05-16.pdf) |
+| Auditor              | Date       | Upstream version                                                                                        | Report                                                                                                                                                |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zellic               | 2025-05-16 | [`75c5529`](https://github.com/solana-program/token-wrap/tree/75c5529d5a191f12bd58b6b92ca0104ce3464763) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/ZellicTokenWrapAudit-2025-05-16.pdf)              |
 | Runtime Verification | 2025-06-11 | [`dd71fc1`](https://github.com/solana-program/token-wrap/tree/dd71fc10c651b07b7d62b151021216e5321b1789) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/RuntimeVerificationTokenWrapAudit-2025-06-11.pdf) |
 | Runtime Verification | 2025-10-30 | [`228dc97`](https://github.com/solana-program/token-wrap/tree/228dc976d454b766e649ea7759304e1fb457c76d) | [PDF](https://github.com/anza-xyz/security-audits/blob/80287adb867b83a394d62dd7ab88a693eb266539/spl/RuntimeVerificationTokenWrapAudit-2025-10-30.pdf) |
 
