@@ -1,7 +1,8 @@
 [package]
 name = "spl-token-wrap"
 version = "1.0.0"
-description = "Solana Program Library Token Wrap"
+description = "k256-maintained Token Wrap program"
+publish = false
 authors = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }

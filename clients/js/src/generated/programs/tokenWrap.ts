@@ -31,16 +31,25 @@ import {
     type SelfFetchFunctions,
     type SelfPlanAndSendFunctions,
 } from '@solana/program-client-core';
-import { getBackpointerCodec, type Backpointer, type BackpointerArgs } from '../accounts';
+import {
+    getBackpointerCodec,
+    getCanonicalDeploymentPointerCodec,
+    type Backpointer,
+    type BackpointerArgs,
+    type CanonicalDeploymentPointer,
+    type CanonicalDeploymentPointerArgs,
+} from '../accounts';
 import {
     getCloseStuckEscrowInstruction,
     getCreateMintInstruction,
+    getSetCanonicalPointerInstruction,
     getSyncMetadataToSplTokenInstruction,
     getSyncMetadataToToken2022Instruction,
     getUnwrapInstruction,
     getWrapInstruction,
     parseCloseStuckEscrowInstruction,
     parseCreateMintInstruction,
+    parseSetCanonicalPointerInstruction,
     parseSyncMetadataToSplTokenInstruction,
     parseSyncMetadataToToken2022Instruction,
     parseUnwrapInstruction,
@@ -49,22 +58,25 @@ import {
     type CreateMintInput,
     type ParsedCloseStuckEscrowInstruction,
     type ParsedCreateMintInstruction,
+    type ParsedSetCanonicalPointerInstruction,
     type ParsedSyncMetadataToSplTokenInstruction,
     type ParsedSyncMetadataToToken2022Instruction,
     type ParsedUnwrapInstruction,
     type ParsedWrapInstruction,
+    type SetCanonicalPointerInput,
     type SyncMetadataToSplTokenInput,
     type SyncMetadataToToken2022Input,
     type UnwrapInput,
     type WrapInput,
 } from '../instructions';
-import { findBackpointerPda, findWrappedMintAuthorityPda, findWrappedMintPda } from '../pdas';
+import { findBackpointerPda, findCanonicalPointerPda, findWrappedMintAuthorityPda, findWrappedMintPda } from '../pdas';
 
 export const TOKEN_WRAP_PROGRAM_ADDRESS =
-    'TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR' as Address<'TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR'>;
+    'pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2' as Address<'pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2'>;
 
 export enum TokenWrapAccount {
     Backpointer,
+    CanonicalDeploymentPointer,
 }
 
 export enum TokenWrapInstruction {
@@ -74,6 +86,7 @@ export enum TokenWrapInstruction {
     CloseStuckEscrow,
     SyncMetadataToToken2022,
     SyncMetadataToSplToken,
+    SetCanonicalPointer,
 }
 
 export function identifyTokenWrapInstruction(
@@ -98,13 +111,16 @@ export function identifyTokenWrapInstruction(
     if (containsBytes(data, getU8Encoder().encode(5), 0)) {
         return TokenWrapInstruction.SyncMetadataToSplToken;
     }
+    if (containsBytes(data, getU8Encoder().encode(6), 0)) {
+        return TokenWrapInstruction.SetCanonicalPointer;
+    }
     throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, {
         instructionData: data,
         programName: 'tokenWrap',
     });
 }
 
-export type ParsedTokenWrapInstruction<TProgram extends string = 'TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR'> =
+export type ParsedTokenWrapInstruction<TProgram extends string = 'pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2'> =
     | ({ instructionType: TokenWrapInstruction.CreateMint } & ParsedCreateMintInstruction<TProgram>)
     | ({ instructionType: TokenWrapInstruction.Wrap } & ParsedWrapInstruction<TProgram>)
     | ({ instructionType: TokenWrapInstruction.Unwrap } & ParsedUnwrapInstruction<TProgram>)
@@ -114,7 +130,8 @@ export type ParsedTokenWrapInstruction<TProgram extends string = 'TwRapQCDhWkZRr
       } & ParsedSyncMetadataToToken2022Instruction<TProgram>)
     | ({
           instructionType: TokenWrapInstruction.SyncMetadataToSplToken;
-      } & ParsedSyncMetadataToSplTokenInstruction<TProgram>);
+      } & ParsedSyncMetadataToSplTokenInstruction<TProgram>)
+    | ({ instructionType: TokenWrapInstruction.SetCanonicalPointer } & ParsedSetCanonicalPointerInstruction<TProgram>);
 
 export function parseTokenWrapInstruction<TProgram extends string>(
     instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -154,6 +171,13 @@ export function parseTokenWrapInstruction<TProgram extends string>(
                 ...parseSyncMetadataToSplTokenInstruction(instruction),
             };
         }
+        case TokenWrapInstruction.SetCanonicalPointer: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: TokenWrapInstruction.SetCanonicalPointer,
+                ...parseSetCanonicalPointerInstruction(instruction),
+            };
+        }
         default:
             throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, {
                 instructionType: instructionType as string,
@@ -172,6 +196,8 @@ export type TokenWrapPlugin = {
 
 export type TokenWrapPluginAccounts = {
     backpointer: ReturnType<typeof getBackpointerCodec> & SelfFetchFunctions<BackpointerArgs, Backpointer>;
+    canonicalDeploymentPointer: ReturnType<typeof getCanonicalDeploymentPointerCodec> &
+        SelfFetchFunctions<CanonicalDeploymentPointerArgs, CanonicalDeploymentPointer>;
 };
 
 export type TokenWrapPluginInstructions = {
@@ -187,12 +213,16 @@ export type TokenWrapPluginInstructions = {
     syncMetadataToSplToken: (
         input: SyncMetadataToSplTokenInput,
     ) => ReturnType<typeof getSyncMetadataToSplTokenInstruction> & SelfPlanAndSendFunctions;
+    setCanonicalPointer: (
+        input: SetCanonicalPointerInput,
+    ) => ReturnType<typeof getSetCanonicalPointerInstruction> & SelfPlanAndSendFunctions;
 };
 
 export type TokenWrapPluginPdas = {
     backpointer: typeof findBackpointerPda;
     wrappedMint: typeof findWrappedMintPda;
     wrappedMintAuthority: typeof findWrappedMintAuthorityPda;
+    canonicalPointer: typeof findCanonicalPointerPda;
 };
 
 export type TokenWrapPluginRequirements = ClientWithRpc<GetAccountInfoApi & GetMultipleAccountsApi> &
@@ -203,7 +233,10 @@ export function tokenWrapProgram() {
     return <T extends TokenWrapPluginRequirements>(client: T): ExtendedClient<T, { tokenWrap: TokenWrapPlugin }> => {
         return extendClient(client, {
             tokenWrap: <TokenWrapPlugin>{
-                accounts: { backpointer: addSelfFetchFunctions(client, getBackpointerCodec()) },
+                accounts: {
+                    backpointer: addSelfFetchFunctions(client, getBackpointerCodec()),
+                    canonicalDeploymentPointer: addSelfFetchFunctions(client, getCanonicalDeploymentPointerCodec()),
+                },
                 instructions: {
                     createMint: input => addSelfPlanAndSendFunctions(client, getCreateMintInstruction(input)),
                     wrap: input => addSelfPlanAndSendFunctions(client, getWrapInstruction(input)),
@@ -214,11 +247,14 @@ export function tokenWrapProgram() {
                         addSelfPlanAndSendFunctions(client, getSyncMetadataToToken2022Instruction(input)),
                     syncMetadataToSplToken: input =>
                         addSelfPlanAndSendFunctions(client, getSyncMetadataToSplTokenInstruction(input)),
+                    setCanonicalPointer: input =>
+                        addSelfPlanAndSendFunctions(client, getSetCanonicalPointerInstruction(input)),
                 },
                 pdas: {
                     backpointer: findBackpointerPda,
                     wrappedMint: findWrappedMintPda,
                     wrappedMintAuthority: findWrappedMintAuthorityPda,
+                    canonicalPointer: findCanonicalPointerPda,
                 },
                 identifyInstruction: identifyTokenWrapInstruction,
                 parseInstruction: parseTokenWrapInstruction,

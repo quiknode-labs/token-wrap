@@ -23,7 +23,7 @@ jobs:
       SOLANA_CLI_VERSION: ${{ steps.compute.outputs.SOLANA_CLI_VERSION }}
     steps:
       - name: Git Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Compute variables
         id: compute
@@ -37,7 +37,7 @@ jobs:
 
   main:
     needs: set_env
-    uses: solana-program/actions/.github/workflows/main.yml@main
+    uses: solana-program/actions/.github/workflows/main.yml@328459cc7b4e0711d501b37a90a4a036825f654f
     with:
       js-packages: ${{ needs.set_env.outputs.JS_PACKAGES }}
       sbpf-program-packages: ${{ needs.set_env.outputs.SBPF_PROGRAM_PACKAGES }}

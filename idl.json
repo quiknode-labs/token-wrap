@@ -5,8 +5,8 @@
   "program": {
     "kind": "programNode",
     "name": "tokenWrap",
-    "publicKey": "TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR",
-    "version": "0.1.0",
+    "publicKey": "pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2",
+    "version": "1.0.0-k256.1",
     "accounts": [
       {
         "kind": "accountNode",
@@ -30,6 +30,30 @@
         "pda": {
           "kind": "pdaLinkNode",
           "name": "backpointer"
+        }
+      },
+      {
+        "kind": "accountNode",
+        "name": "canonicalDeploymentPointer",
+        "size": 32,
+        "docs": [
+          "The unwrapped mint authority's selected canonical Token Wrap deployment."
+        ],
+        "data": {
+          "kind": "structTypeNode",
+          "fields": [
+            {
+              "kind": "structFieldTypeNode",
+              "name": "programId",
+              "type": {
+                "kind": "publicKeyTypeNode"
+              }
+            }
+          ]
+        },
+        "pda": {
+          "kind": "pdaLinkNode",
+          "name": "canonicalPointer"
         }
       }
     ],
@@ -822,6 +846,91 @@
             "offset": 0
           }
         ]
+      },
+      {
+        "kind": "instructionNode",
+        "name": "setCanonicalPointer",
+        "docs": [
+          "Create or update the canonical Token Wrap deployment pointer for an unwrapped mint.",
+          "Only the unwrapped mint authority can authorize this instruction."
+        ],
+        "optionalAccountStrategy": "programId",
+        "accounts": [
+          {
+            "kind": "instructionAccountNode",
+            "name": "unwrappedMintAuthority",
+            "isWritable": false,
+            "isSigner": true,
+            "isOptional": false,
+            "docs": [
+              "Current authority of the unwrapped mint"
+            ]
+          },
+          {
+            "kind": "instructionAccountNode",
+            "name": "canonicalPointer",
+            "isWritable": true,
+            "isSigner": false,
+            "isOptional": false,
+            "docs": [
+              "Canonical deployment pointer PDA"
+            ]
+          },
+          {
+            "kind": "instructionAccountNode",
+            "name": "unwrappedMint",
+            "isWritable": false,
+            "isSigner": false,
+            "isOptional": false,
+            "docs": [
+              "Unwrapped mint whose authority selects the canonical deployment"
+            ]
+          },
+          {
+            "kind": "instructionAccountNode",
+            "name": "systemProgram",
+            "isWritable": false,
+            "isSigner": false,
+            "isOptional": false,
+            "docs": [
+              "System program"
+            ],
+            "defaultValue": {
+              "kind": "publicKeyValueNode",
+              "publicKey": "11111111111111111111111111111111"
+            }
+          }
+        ],
+        "arguments": [
+          {
+            "kind": "instructionArgumentNode",
+            "name": "discriminator",
+            "defaultValueStrategy": "omitted",
+            "type": {
+              "kind": "numberTypeNode",
+              "format": "u8",
+              "endian": "le"
+            },
+            "defaultValue": {
+              "kind": "numberValueNode",
+              "number": 6
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "programId",
+            "type": {
+              "kind": "publicKeyTypeNode"
+            }
+          }
+        ],
+        "discriminators": [
+          {
+            "kind": "fieldDiscriminatorNode",
+            "name": "discriminator",
+            "offset": 0
+          }
+        ]
       }
     ],
     "definedTypes": [],
@@ -899,6 +1008,30 @@
           {
             "kind": "variablePdaSeedNode",
             "name": "wrappedMint",
+            "type": {
+              "kind": "publicKeyTypeNode"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "pdaNode",
+        "name": "canonicalPointer",
+        "seeds": [
+          {
+            "kind": "constantPdaSeedNode",
+            "type": {
+              "kind": "stringTypeNode",
+              "encoding": "utf8"
+            },
+            "value": {
+              "kind": "stringValueNode",
+              "string": "canonical_pointer"
+            }
+          },
+          {
+            "kind": "variablePdaSeedNode",
+            "name": "unwrappedMint",
             "type": {
               "kind": "publicKeyTypeNode"
             }

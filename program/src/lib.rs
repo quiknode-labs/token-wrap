@@ -16,7 +16,7 @@ use {
     spl_associated_token_account_interface::address::get_associated_token_address_with_program_id,
 };
 
-solana_pubkey::declare_id!("TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR");
+solana_pubkey::declare_id!("pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2");
 
 const WRAPPED_MINT_SEED: &[u8] = br"mint";
 
@@ -244,4 +244,17 @@ pub fn get_canonical_pointer_address_for_program(
     program_id: &Pubkey,
 ) -> Pubkey {
     get_canonical_pointer_address_with_seed_for_program(unwrapped_mint, program_id).0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::id;
+
+    #[test]
+    fn program_id_matches_pwrap_deployment_key() {
+        assert_eq!(
+            id().to_string(),
+            "pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2"
+        );
+    }
 }

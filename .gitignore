@@ -8,3 +8,7 @@ node_modules
 test-ledger
 dist
 .idea
+
+# Deployment key material must never enter this public fork.
+*-keypair.json
+new_funder.json

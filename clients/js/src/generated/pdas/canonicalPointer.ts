@@ -14,12 +14,12 @@ import {
     type ProgramDerivedAddress,
 } from '@solana/kit';
 
-export type BackpointerSeeds = {
-    wrappedMint: Address;
+export type CanonicalPointerSeeds = {
+    unwrappedMint: Address;
 };
 
-export async function findBackpointerPda(
-    seeds: BackpointerSeeds,
+export async function findCanonicalPointerPda(
+    seeds: CanonicalPointerSeeds,
     config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
     const {
@@ -27,6 +27,6 @@ export async function findBackpointerPda(
     } = config;
     return await getProgramDerivedAddress({
         programAddress,
-        seeds: [getUtf8Encoder().encode('backpointer'), getAddressEncoder().encode(seeds.wrappedMint)],
+        seeds: [getUtf8Encoder().encode('canonical_pointer'), getAddressEncoder().encode(seeds.unwrappedMint)],
     });
 }

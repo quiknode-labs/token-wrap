@@ -33,9 +33,9 @@ check-cfg = [
 ]
 
 [workspace.package]
-authors = ["Anza Maintainers <maintainers@anza.xyz>"]
-repository = "https://github.com/solana-program/token-wrap"
-homepage = "https://anza.xyz/"
+authors = ["Anza Maintainers <maintainers@anza.xyz>", "k256 Maintainers"]
+repository = "https://github.com/quiknode-labs/token-wrap"
+homepage = "https://k256.xyz/"
 license = "Apache-2.0"
 edition = "2021"
 

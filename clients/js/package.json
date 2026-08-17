@@ -1,8 +1,12 @@
 {
     "name": "@solana-program/token-wrap",
     "version": "2.6.0",
-    "description": "Javascript helpers for interacting with the Solana Token Wrap program",
-    "author": "Anza Maintainers <maintainers@anza.xyz>",
+    "description": "Javascript helpers for the k256-maintained Token Wrap program",
+    "author": "k256 Maintainers",
+    "contributors": [
+        "Anza Maintainers <maintainers@anza.xyz>"
+    ],
+    "private": true,
     "license": "Apache-2.0",
     "sideEffects": false,
     "module": "./dist/src/index.mjs",
@@ -28,20 +32,16 @@
         "lint:fix": "eslint --fix --ext js,ts,tsx src",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "exit 0",
+        "test": "tsx --test tests/*.test.ts",
         "example:single-signer": "tsx src/examples/single-signer.ts",
         "example:multisig": "tsx src/examples/multisig.ts"
     },
-    "publishConfig": {
-        "access": "public",
-        "registry": "https://registry.npmjs.org"
-    },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/solana-program/token-wrap.git"
+        "url": "git+https://github.com/quiknode-labs/token-wrap.git"
     },
     "bugs": {
-        "url": "https://github.com/solana-program/token-wrap/issues"
+        "url": "https://github.com/quiknode-labs/token-wrap/issues"
     },
     "peerDependencies": {
         "@solana/kit": "^7.0.0"

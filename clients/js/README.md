@@ -1,29 +1,24 @@
-# @solana-program/token-wrap
+# pWrap JavaScript client
 
-TypeScript client for the Solana Token Wrap program.
+Generated TypeScript helpers for the k256-maintained pWrap program at
+`pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2`.
 
----
+This package is private and is not published to npm. Build and consume it from this
+repository until a separate public-client release is reviewed and approved.
 
-## 📦 Publishing to NPM
+## Verify
 
-This package uses Changesets and GitHub Actions to manage versioning and publishing.
-
-### 🚀 Publishing Steps
-
-1. Ensure you have the [changesets CLI](https://github.com/changesets/changesets) installed.
-2. Create a Changeset
-
-Run the following to document your changes and select a version bump:
+From the repository root:
 
 ```bash
-pnpm changeset
+pnpm --dir clients/js test
+pnpm --dir clients/js build
+pnpm --dir clients/js lint
+pnpm --dir clients/js format:check
 ```
 
-3. Version the release (will bump the local package version and add to the changelog)
+Regenerate the client only after changing `program/idl.ts`:
 
 ```bash
-pnpm changeset version
+pnpm generate:clients
 ```
-
-4. Create a PR with the changes and merge! The github action will detect the difference in versions and publish
-   automatically.

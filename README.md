@@ -1,160 +1,113 @@
-# SPL Token Wrap Program
+# k256 pWrap
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/solana-program/token-wrap/main.yml?logo=GitHub)](https://github.com/solana-program/token-wrap/actions/workflows/main.yml)
-[![Crates.io](https://img.shields.io/crates/v/spl-token-wrap-cli)](https://crates.io/crates/spl-token-wrap-cli)
-[![npm](https://img.shields.io/npm/v/@solana-program/token-wrap)](https://www.npmjs.com/package/@solana-program/token-wrap)
+[![CI](https://github.com/quiknode-labs/token-wrap/actions/workflows/main.yml/badge.svg)](https://github.com/quiknode-labs/token-wrap/actions/workflows/main.yml)
 
-This program enables the creation of "wrapped" versions of existing SPL tokens, facilitating interoperability between
-different token standards. If you are building an app with a mint/token and find yourself wishing you could take
-advantage of some of the latest features of a specific token program, this might be for you!
+pWrap is the k256-maintained fork of the Solana Program Token Wrap implementation. It converts an existing SPL Token or Token-2022 mint into a deterministic wrapped representation backed by on-chain escrow.
 
-- **Program ID:** `TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR`
-- **IDL:** [`./idl.json`](./idl.json)
-- **Docs & SDK Guide:** https://www.solana-program.com/docs/token-wrap
+## Deployment identity
 
-## Features
+| Item | Value |
+| --- | --- |
+| pWrap program ID | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` |
+| K256 fork | <https://github.com/quiknode-labs/token-wrap> |
+| Upstream | <https://github.com/solana-program/token-wrap> |
+| Upstream baseline | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6) |
+| IDL | [`idl.json`](./idl.json) |
 
-* **Bidirectional Wrapping:** Convert tokens between SPL Token and SPL Token-2022 standards in either direction,
-  including conversions between different SPL Token-2022 mints.
-* **Extensible Mint Creation:** The `CreateMint` instruction is designed to be extensible through the `MintCustomizer`
-  trait. By forking the program and implementing this trait, developers can add custom logic to:
-    * Include any SPL Token-2022 extensions on the new wrapped mint.
-    * Modify default properties like the `freeze_authority` and `decimals`.
-* **Confidential Transfers by Default:** All wrapped tokens created under the Token-2022 standard automatically include
-  the `ConfidentialTransferMint` extension, enabling the option for privacy-preserving transactions. This feature is
-  immutable and requires no additional configuration.
-* **Transfer Hook Compatibility:** Integrates with tokens that implement the SPL Transfer Hook interface,
-  enabling custom logic on token transfers.
-* **Multisignature Support:** Compatible with multisig signers for both wrapping and unwrapping operations.
-* **Metadata Synchronization:** Syncs metadata from unwrapped tokens (both Metaplex and Token-2022 standards) to their
-  wrapped counterparts.
+The program-account keypair derives the same intended address for devnet, testnet, and mainnet because each Solana cluster has an independent address space. No deployment is performed by this repository change. Devnet is the first intended deployment and requires a separate explicit authorization.
 
-## How It Works
+The upstream `TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR` address is not used by pWrap. Changing the program ID changes every program-derived wrapped mint, authority, backpointer, canonical pointer, and escrow address.
 
-It supports the following primary operations:
+The program-account keypair is operator key material. It must stay outside this public repository; only the public program ID above belongs in source control.
 
-1. **`CreateMint`:** This operation initializes a new wrapped token mint and its associated backpointer account. Note,
-   the caller must pre-fund this account with lamports. This is to avoid requiring writer+signer privileges on this
-   instruction.
+## Provenance and security status
 
-    * **Wrapped Mint:** An SPL Token or SPL Token-2022 mint account is created. The address of this mint is a
-      PDA derived from the *unwrapped* token's mint address and the *wrapped* token program ID. This ensures a unique,
-      deterministic relationship between the wrapped and unwrapped tokens. The wrapped mint's authority is also a PDA,
-      controlled by the Token Wrap program.
-    * **Backpointer:** An account (also a PDA, derived from the *wrapped* mint address) is created to store the
-      address of the original *unwrapped* token mint. This allows anyone to easily determine the unwrapped token
-      corresponding to a wrapped token, facilitating unwrapping.
+This fork deliberately starts from the latest upstream `main`, not the older released program snapshot:
 
-2. **`Wrap`:**  This operation accepts deposits of unwrapped tokens and mints wrapped tokens.
+- latest upstream program release: `program@v1.0.0` at `4e4e1d0` (2025-09-11);
+- latest audit listed by upstream: Runtime Verification at `228dc97` (2025-10-30);
+- fork baseline: `81adb66` (2026-08-17).
 
-    * Unwrapped tokens are transferred from the user's account to an escrow account. Any unwrapped token account whose
-      owner is a PDA controlled by the Token Wrap program can be used.
-    * An equivalent amount of wrapped tokens is minted to the user's wrapped token account.
+Upstream added `SetCanonicalPointer` and upgraded core Solana dependencies after the latest listed audit. The pWrap program-ID change also produces a distinct binary. The historical audits are useful lineage, not an audit of the current pWrap binary. Devnet experimentation does not authorize mainnet or real-value assets.
 
-3. **`Unwrap`:** This operation burns wrapped tokens and releases unwrapped token deposits.
+The latest Runtime Verification report leaves acknowledged findings around freeze-authority coordination, loss of an underlying confidential auditor policy, transparent wrap amounts, and partial metadata synchronization. pWrap also remains permissionless and upgradeable. The valueless KTEST experiment excludes freeze authority and broader asset admission, but does not claim those general risks are fixed.
 
-    * Wrapped tokens are burned from the user's wrapped token account.
-    * An equivalent amount of unwrapped tokens is transferred from the escrow account to the user's unwrapped token
-      account.
+## Protocol model
 
-4. **`CloseStuckEscrow`:** This operation handles an edge case with re-creating a mint with the MintCloseAuthority
-   extension.
+pWrap keeps one deterministic relationship between an unwrapped mint and a wrapped mint for a selected token program:
 
-    * The escrow ATA can get "stuck" when an unwrapped mint with a close authority is closed and then a new mint is
-      created at the same address but with different extensions, leaving the escrow ATA (Associated Token Account) in an
-      incompatible state.
-    * The instruction closes the old escrow ATA and returns the lamports to a specified destination account.
-    * This operation will only succeed if the current escrow has zero balance and has different extensions than the
-      mint.
-    * After closing the stuck escrow, the client is responsible for recreating the ATA with the correct extensions.
+1. `CreateMint` creates the wrapped mint and its backpointer PDA.
+2. `Wrap` transfers unwrapped tokens into the escrow ATA and mints the backed wrapped amount.
+3. `Unwrap` burns wrapped tokens and atomically releases the same underlying amount from escrow.
+4. `CloseStuckEscrow` closes a zero-balance escrow whose account extensions no longer match a recreated mint.
+5. `SyncMetadataToToken2022` copies supported metadata into a wrapped Token-2022 mint.
+6. `SyncMetadataToSplToken` copies supported metadata into the wrapped SPL Token mint's Metaplex account.
+7. `SetCanonicalPointer` lets an unwrapped mint authority publish its preferred Token Wrap deployment.
 
-5. **`SyncMetadataToToken2022`**: This operation copies metadata from an unwrapped mint to its wrapped Token-2022
-   mint's `TokenMetadata` extension.
-    * It initializes the `TokenMetadata` extension on the wrapped mint if it doesn't already exist.
-    * The caller is responsible for pre-funding the wrapped mint account with enough lamports to cover the rent for the
-      added space.
-    * Supports: `SPL Token -> Token-2022` and `Token-2022 -> Token-2022`.
+The wrapped mint, mint authority, backpointer, canonical pointer, and escrow addresses are program-derived. Users retain ownership of their token accounts. The wrapper controls escrow release and wrapped issuance through its deployed code, so the program upgrade authority is a real economic authority and must be governed accordingly.
 
-6. **`SyncMetadataToSplToken`**: This operation copies metadata from an unwrapped mint to the Metaplex metadata
-   account of its wrapped SPL Token mint.
-    * It can create the Metaplex metadata account if it doesn't exist or update an existing one.
-    * The `wrapped_mint_authority` PDA acts as the payer for the Metaplex program CPI and must be pre-funded with
-      sufficient lamports to cover rent for the Metaplex account.
-    * Supports: `Token-2022 -> SPL Token` and `SPL Token -> SPL Token`.
+## Confidential Transfer policy
 
-The 1:1 relationship between wrapped and unwrapped tokens is maintained through the escrow mechanism, ensuring that
-wrapped tokens are always fully backed by their unwrapped counterparts.
+When the wrapped mint uses Token-2022, the default mint customizer initializes:
 
-## Permissionless design
+- `ConfidentialTransferMint` with automatic account approval;
+- no confidential-transfer authority;
+- no auditor;
+- `MetadataPointer` controlled by the wrapped-mint authority PDA;
+- decimals and freeze authority copied from the unwrapped mint.
 
-The SPL Token Wrap program is designed to be **permissionless**. This means:
+pWrap itself implements public wrap and unwrap. Configure-account, deposit, confidential transfer, apply-pending-balance, and withdraw are Token-2022 operations and use the relevant proof programs. Moving into or out of pWrap escrow is public; the wrapper does not make the boundary transaction confidential.
 
-* **Anyone can create a wrapped mint:**  No special permissions or whitelisting is required to create a wrapped
-  version of an existing mint. The `CreateMint` instruction is open to all users, provided they can
-  pay the required rent for the new accounts.
-* **Anyone can wrap and unwrap tokens:**  Once a wrapped mint has been created, any user holding the underlying
-  unwrapped tokens can use the `Wrap` and `Unwrap` instructions. All transfers are controlled by PDAs owned by the Token
-  Wrap program itself. However, it is important to note that if the *unwrapped* token has a freeze authority,
-  that freeze authority is *preserved* in the wrapped token.
+The k256 experiment admits only an exact fee-free, non-rebasing, non-hooked, non-freezable valueless devnet fixture. The general upstream ABI remains available, but broader asset admission is a separate security and product decision.
 
-## Confidential Transfer extension
+## Build and test
 
-The `ConfidentialTransferMint` extension is added to every Token-2022 wrapped mint and initialized with the following
-config:
+Required toolchains are pinned in the repository:
 
-* **No Authority:** The confidential transfer authority is set to `None`, making the configuration immutable. This
-  ensures that the privacy features cannot be disabled or altered after the wrapped mint is created.
-* **No Auditor:** The wrapped mints are created without a confidential transfer auditor. This means that there is no
-  third party that can view the details of confidential transactions.
-* **Automatic Account Approval:** New token accounts are approved for confidential transfers by default. This allows
-  users to make private transactions permissionlessly.
+- Rust `1.93.1` (`rust-toolchain.toml`);
+- Solana CLI `4.1.0` (`Cargo.toml` workspace metadata and `Makefile`);
+- pnpm `10.15.1` (`package.json`).
 
-## Customizing mint
+```bash
+pnpm install --frozen-lockfile
+pnpm generate:clients
+cargo check --workspace --all-targets --locked
+make build-sbf-program
+make build-sbf-program-test-metadata-owner
+make build-sbf-program-test-transfer-hook
+make test-program
+cargo test -p spl-token-wrap-cli --bin spl-token-wrap
+cargo test -p spl-token-wrap-cli --test runner
+pnpm --dir clients/js test
+pnpm --dir clients/js build
+```
 
-If the current wrapped mint config does not suit your needs, please fork! A few places you are going to want to update:
+`pnpm generate:clients` regenerates `idl.json` and the JavaScript client from `program/idl.ts`. The generated client packages retain their upstream-compatible names but are marked private in this fork; no K256 package publication contract exists yet.
 
-- Add a new struct that implements `MintCustomizer` in `program/src/mint_customizer`
-- Replace the current one in use within the processor: `program/src/processor.rs`
-- Re-run tests (see `package.json`) and update/remove assertions to accommodate new config
-- If wanting to make use of clients:
-    - CLI: Update mint customizer type in `clients/cli/src/create_mint.rs`
-    - JS: Update mint size in `clients/js/src/create-mint.ts`
+Unlike the upstream snapshot, the generated contract and CLI both expose `SetCanonicalPointer`. The JavaScript test is no longer a no-op: it verifies the pWrap identity, all seven discriminators, the instruction/account codecs, and a canonical-pointer PDA against an independent Solana CLI derivation.
 
-## Audits
+For key verification, artifact checks, cluster identity checks, and the intentionally gated deployment command, see [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
-| Auditor              | Date       | Version                                                                                               | Report                                                                                                                                                |
-|----------------------|------------|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Zellic               | 2025-05-16 | [75c5529](https://github.com/solana-program/token-wrap/tree/75c5529d5a191f12bd58b6b92ca0104ce3464763) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/ZellicTokenWrapAudit-2025-05-16.pdf)              |
-| Runtime Verification | 2025-06-11 | [dd71fc1](https://github.com/solana-program/token-wrap/tree/dd71fc10c651b07b7d62b151021216e5321b1789) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/RuntimeVerificationTokenWrapAudit-2025-06-11.pdf) |
-| Runtime Verification | 2025-10-30 | [228dc97](https://github.com/solana-program/token-wrap/tree/228dc976d454b766e649ea7759304e1fb457c76d) | [PDF](https://github.com/anza-xyz/security-audits/blob/80287adb867b83a394d62dd7ab88a693eb266539/spl/RuntimeVerificationTokenWrapAudit-2025-10-30.pdf) |
+## Upstream maintenance
 
-## Getting Started
+The local checkout uses `origin` for the k256 fork and `upstream` for the Solana Program repository. Review upstream changes before merging them; program behavior, IDL, generated clients, audits, and the pWrap address must remain one coherent release.
 
-### Prerequisites
+```bash
+git fetch upstream --tags
+git log --oneline --left-right main...upstream/main
+git merge upstream/main
+```
 
-1. Install [Solana CLI](https://docs.anza.xyz/cli/install)
-    - Ensure version matches [the crate manifest](./Cargo.toml).
-2. Install [pnpm](https://pnpm.io/installation)
-3. Install project dependencies:
+After every upstream merge, restore and verify the pWrap program ID, regenerate clients, run the full checks above, and produce a new binary hash and security review scope.
 
-    ```bash
-    pnpm install
-    ```
+## Upstream audit lineage
 
-### Building and Testing
-
-1. **Build the Program:**
-
-   ```bash
-   pnpm programs:build
-   ```
-
-2. **Run Tests:**
-
-   ```bash
-   pnpm programs:test
-   ```
+| Auditor | Date | Upstream version | Report |
+| --- | --- | --- | --- |
+| Zellic | 2025-05-16 | [`75c5529`](https://github.com/solana-program/token-wrap/tree/75c5529d5a191f12bd58b6b92ca0104ce3464763) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/ZellicTokenWrapAudit-2025-05-16.pdf) |
+| Runtime Verification | 2025-06-11 | [`dd71fc1`](https://github.com/solana-program/token-wrap/tree/dd71fc10c651b07b7d62b151021216e5321b1789) | [PDF](https://github.com/anza-xyz/security-audits/blob/2294fc0e61c153c8aed174e9f63a1730683f1f2a/spl/RuntimeVerificationTokenWrapAudit-2025-06-11.pdf) |
+| Runtime Verification | 2025-10-30 | [`228dc97`](https://github.com/solana-program/token-wrap/tree/228dc976d454b766e649ea7759304e1fb457c76d) | [PDF](https://github.com/anza-xyz/security-audits/blob/80287adb867b83a394d62dd7ab88a693eb266539/spl/RuntimeVerificationTokenWrapAudit-2025-10-30.pdf) |
 
 ## License
 
-This project is licensed under the Apache License 2.0.
+Apache License 2.0. See [`LICENSE`](./LICENSE). Upstream history and attribution are preserved by the GitHub fork.

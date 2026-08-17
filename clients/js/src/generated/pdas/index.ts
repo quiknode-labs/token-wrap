@@ -7,5 +7,6 @@
  */
 
 export * from './backpointer';
+export * from './canonicalPointer';
 export * from './wrappedMint';
 export * from './wrappedMintAuthority';

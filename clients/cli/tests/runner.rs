@@ -2,8 +2,8 @@ use {
     crate::common::{
         helpers::setup_test_env, test_close_stuck_escrow::*, test_confidential_transfers::*,
         test_create_escrow_account::*, test_create_mint::*, test_pdas::*,
-        test_sync_metadata_to_spl_token::*, test_sync_metadata_to_token2022::*, test_unwrap::*,
-        test_wrap::*,
+        test_set_canonical_pointer::*, test_sync_metadata_to_spl_token::*,
+        test_sync_metadata_to_token2022::*, test_unwrap::*, test_wrap::*,
     },
     libtest_mimic::{Arguments, Trial},
 };
@@ -42,6 +42,7 @@ async fn main() {
         async_trial!(test_create_escrow_account_with_wrong_account_type, env),
         async_trial!(test_create_mint, env),
         async_trial!(test_pdas, env),
+        async_trial!(test_set_canonical_pointer_with_distinct_mint_authority, env),
         async_trial!(test_sync_metadata_from_token2022_to_spl_token, env),
         async_trial!(test_sync_metadata_from_spl_token_to_spl_token, env),
         async_trial!(test_sync_metadata_from_spl_token_to_token2022, env),

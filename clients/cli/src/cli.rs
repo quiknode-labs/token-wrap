@@ -6,6 +6,7 @@ use {
         create_mint::{command_create_mint, CreateMintArgs},
         find_pdas::{command_get_pdas, FindPdasArgs},
         output::parse_output_format,
+        set_canonical_pointer::{command_set_canonical_pointer, SetCanonicalPointerArgs},
         sync_metadata_to_spl_token::{
             command_sync_metadata_to_spl_token, SyncMetadataToSplTokenArgs,
         },
@@ -33,7 +34,7 @@ use {
 #[clap(
     author,
     version,
-    about = "A command line tool for interacting with the SPL Token Wrap program"
+    about = "A command line tool for interacting with the k256 pWrap program"
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -112,6 +113,8 @@ pub enum Command {
     SyncMetadataToSplToken(SyncMetadataToSplTokenArgs),
     /// Sync metadata from unwrapped mint to wrapped Token-2022 mint
     SyncMetadataToToken2022(SyncMetadataToToken2022Args),
+    /// Set the canonical Token Wrap deployment for an unwrapped mint
+    SetCanonicalPointer(SetCanonicalPointerArgs),
 }
 
 impl Command {
@@ -133,6 +136,9 @@ impl Command {
             }
             Command::SyncMetadataToToken2022(args) => {
                 command_sync_metadata_to_token2022(config, args, matches, wallet_manager).await
+            }
+            Command::SetCanonicalPointer(args) => {
+                command_set_canonical_pointer(config, args, matches, wallet_manager).await
             }
         }
     }

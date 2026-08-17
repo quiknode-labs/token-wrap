@@ -4,6 +4,7 @@ pub mod test_confidential_transfers;
 pub mod test_create_escrow_account;
 pub mod test_create_mint;
 pub mod test_pdas;
+pub mod test_set_canonical_pointer;
 pub mod test_sync_metadata_to_spl_token;
 pub mod test_sync_metadata_to_token2022;
 pub mod test_unwrap;

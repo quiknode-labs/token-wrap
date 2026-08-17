@@ -6,6 +6,7 @@ mod create_escrow_account;
 mod create_mint;
 mod find_pdas;
 mod output;
+mod set_canonical_pointer;
 mod sync_metadata_to_spl_token;
 mod sync_metadata_to_token2022;
 mod unwrap;

@@ -1,7 +1,8 @@
 [package]
 name = "spl-token-wrap-cli"
 version = "2.0.0"
-description = "Solana Program Library Token Wrap command-line utility"
+description = "Command-line utility for the k256-maintained Token Wrap program"
+publish = false
 authors = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }

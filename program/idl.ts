@@ -34,8 +34,8 @@ const codama = createFromRoot(
   rootNode(
     programNode({
       name: "tokenWrap",
-      publicKey: "TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR",
-      version: "0.1.0",
+      publicKey: "pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2",
+      version: "1.0.0-k256.1",
       accounts: [
         accountNode({
           name: "backpointer",
@@ -47,6 +47,19 @@ const codama = createFromRoot(
             }),
           ]),
           pda: pdaLinkNode("backpointer"),
+          size: 32,
+        }),
+        accountNode({
+          name: "canonicalDeploymentPointer",
+          docs:
+            "The unwrapped mint authority's selected canonical Token Wrap deployment.",
+          data: structTypeNode([
+            structFieldTypeNode({
+              name: "programId",
+              type: publicKeyTypeNode(),
+            }),
+          ]),
+          pda: pdaLinkNode("canonicalPointer"),
           size: 32,
         }),
       ],
@@ -543,6 +556,53 @@ const codama = createFromRoot(
             }),
           ],
         }),
+        instructionNode({
+          name: "setCanonicalPointer",
+          docs: [
+            "Create or update the canonical Token Wrap deployment pointer for an unwrapped mint.",
+            "Only the unwrapped mint authority can authorize this instruction.",
+          ],
+          accounts: [
+            instructionAccountNode({
+              name: "unwrappedMintAuthority",
+              docs: "Current authority of the unwrapped mint",
+              isSigner: true,
+              isWritable: false,
+            }),
+            instructionAccountNode({
+              name: "canonicalPointer",
+              docs: "Canonical deployment pointer PDA",
+              isSigner: false,
+              isWritable: true,
+            }),
+            instructionAccountNode({
+              name: "unwrappedMint",
+              docs: "Unwrapped mint whose authority selects the canonical deployment",
+              isSigner: false,
+              isWritable: false,
+            }),
+            instructionAccountNode({
+              name: "systemProgram",
+              docs: "System program",
+              isSigner: false,
+              isWritable: false,
+              defaultValue: publicKeyValueNode(SYSTEM_PROGRAM_ADDRESS),
+            }),
+          ],
+          discriminators: [fieldDiscriminatorNode("discriminator", 0)],
+          arguments: [
+            instructionArgumentNode({
+              name: "discriminator",
+              type: numberTypeNode("u8"),
+              defaultValue: numberValueNode(6),
+              defaultValueStrategy: "omitted",
+            }),
+            instructionArgumentNode({
+              name: "programId",
+              type: publicKeyTypeNode(),
+            }),
+          ],
+        }),
       ],
       pdas: [
         pdaNode({
@@ -565,6 +625,13 @@ const codama = createFromRoot(
           seeds: [
             constantPdaSeedNodeFromString("utf8", "authority"),
             variablePdaSeedNode("wrappedMint", publicKeyTypeNode()),
+          ],
+        }),
+        pdaNode({
+          name: "canonicalPointer",
+          seeds: [
+            constantPdaSeedNodeFromString("utf8", "canonical_pointer"),
+            variablePdaSeedNode("unwrappedMint", publicKeyTypeNode()),
           ],
         }),
       ],

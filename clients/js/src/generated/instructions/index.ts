@@ -8,6 +8,7 @@
 
 export * from './closeStuckEscrow';
 export * from './createMint';
+export * from './setCanonicalPointer';
 export * from './syncMetadataToSplToken';
 export * from './syncMetadataToToken2022';
 export * from './unwrap';

@@ -22,6 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Dismiss Stale PR Reviews
-        uses: withgraphite/dismiss-stale-approvals@main
+        uses: withgraphite/dismiss-stale-approvals@23da77dd04e4549404329f3078a3d978e4db13c2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
