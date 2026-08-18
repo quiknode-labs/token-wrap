@@ -198,8 +198,8 @@ After every authorized deployment or upgrade, independently verify:
   pre-existing Devnet mint; never create an underlying test mint;
 - Token-2022 confidential configuration and a complete public-wrap → confidential-deposit → confidential-transfer → withdraw → unwrap lifecycle.
 
-The initial deployment and retired synthetic-fixture evidence are recorded in
-[`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). The active existing-asset gate is
+The initial program deployment is recorded in [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md).
+The active existing-asset gate is
 [`DEVNET_EXISTING_ASSET_TEST.md`](./DEVNET_EXISTING_ASSET_TEST.md). Neither makes this distinct
 pWrap binary audited, production-ready, or safe for real value.
 

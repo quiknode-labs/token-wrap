@@ -6,22 +6,22 @@ pWrap is the k256-maintained fork of the Solana Program Token Wrap implementatio
 
 ## Deployment identity
 
-| Item                      | Value                                                                                                                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pWrap program ID          | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2`                                                                                                                              |
+| Item                      | Value                                                                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pWrap program ID          | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2`                                                                                                                                      |
 | Devnet                    | [Live](https://explorer.solana.com/address/pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2?cluster=devnet); slot `484920383`; authority `G1kdS4CCCKZFKzupAm9N5ZLMvx5bgfzpUx9xkmt1KxYR` |
-| Mainnet                   | [Live](https://explorer.solana.com/address/pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2); slot `440055335`; authority `EDJwdLWCgUdFMdcxqXNYjvB9EvF6qkAwcwYdwzjgU4TC`          |
-| Testnet                   | Not deployed                                                                                                                                                               |
-| ProgramData, each cluster | `DJ7bADfr6LxWQsyzRGJXRwieXB4CmkRioTLpMoPvMhW1`                                                                                                                             |
-| Deployed ELF              | 436,360 bytes; SHA-256 `fb64746885e19cd5a8a1f4f40c8a6dfff8183cc3d8e30b40a120a1d4dee7eb49`                                                                                  |
-| K256 fork                 | <https://github.com/quiknode-labs/token-wrap>                                                                                                                              |
-| Upstream                  | <https://github.com/solana-program/token-wrap>                                                                                                                             |
-| Upstream baseline         | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6)                         |
-| IDL                       | [`idl.json`](./idl.json)                                                                                                                                                   |
+| Mainnet                   | [Live](https://explorer.solana.com/address/pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2); slot `440055335`; authority `EDJwdLWCgUdFMdcxqXNYjvB9EvF6qkAwcwYdwzjgU4TC`                |
+| Testnet                   | Not deployed                                                                                                                                                                       |
+| ProgramData, each cluster | `DJ7bADfr6LxWQsyzRGJXRwieXB4CmkRioTLpMoPvMhW1`                                                                                                                                     |
+| Deployed ELF              | 436,360 bytes; SHA-256 `fb64746885e19cd5a8a1f4f40c8a6dfff8183cc3d8e30b40a120a1d4dee7eb49`                                                                                          |
+| K256 fork                 | <https://github.com/quiknode-labs/token-wrap>                                                                                                                                      |
+| Upstream                  | <https://github.com/solana-program/token-wrap>                                                                                                                                     |
+| Upstream baseline         | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6)                                         |
+| IDL                       | [`idl.json`](./idl.json)                                                                                                                                                           |
 
 `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` is the permanent address on both deployed clusters. The matching program-account keypair was used once per cluster for the initial deployment. Every later upgrade targets the literal public address and never replaces it. Program and ProgramData accounts are cluster-local even though their deterministic addresses are the same.
 
-The Devnet deployment and retired synthetic-asset evidence are recorded in [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). The Mainnet deployment is recorded in [`MAINNET_DEPLOYMENT.md`](./MAINNET_DEPLOYMENT.md). No K256 Mainnet asset mapping was initialized. Deployment nevertheless makes the permissionless `CreateMint` instruction available to third parties; the program has no on-chain asset allowlist or global pause.
+The Devnet program deployment is recorded in [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). The Mainnet deployment is recorded in [`MAINNET_DEPLOYMENT.md`](./MAINNET_DEPLOYMENT.md). No K256 Mainnet asset mapping was initialized. Deployment nevertheless makes the permissionless `CreateMint` instruction available to third parties; the program has no on-chain asset allowlist or global pause.
 
 The upstream `TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR` address is not used by pWrap. Changing the program ID changes every program-derived wrapped mint, authority, backpointer, canonical pointer, and escrow address.
 
@@ -45,7 +45,7 @@ This fork deliberately starts from the latest upstream `main`, not the older rel
 
 Upstream added `SetCanonicalPointer` and upgraded core Solana dependencies after the latest listed audit. The pWrap program-ID change also produces a distinct binary. The historical audits are useful lineage, not an audit of the current pWrap binary. Mainnet deployment does not make the binary audited and does not authorize K256 support for any Mainnet asset.
 
-The latest Runtime Verification report leaves acknowledged findings around freeze-authority coordination, loss of an underlying confidential auditor policy, transparent wrap amounts, and partial metadata synchronization. pWrap also remains permissionless and upgradeable. Historical synthetic-asset evidence does not claim those general risks are fixed.
+The latest Runtime Verification report leaves acknowledged findings around freeze-authority coordination, loss of an underlying confidential auditor policy, transparent wrap amounts, and partial metadata synchronization. pWrap also remains permissionless and upgradeable. The current existing-asset plan does not claim those general risks are fixed.
 
 ## Protocol model
 
