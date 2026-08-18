@@ -56,6 +56,7 @@ async fn main() {
         async_trial!(test_unwrap_fail_mismatched_unwrapped_mint, env),
         async_trial!(test_unwrap_fail_invalid_unwrapped_token_program, env),
         async_trial!(test_unwrap_with_multisig, env),
+        async_trial!(test_wrap_dry_run_surfaces_simulation_failure, env),
         async_trial!(test_wrap_single_signer_with_defaults, env),
         async_trial!(test_wrap_single_signer_with_optional_flags, env),
         async_trial!(test_wrap_with_multisig, env),

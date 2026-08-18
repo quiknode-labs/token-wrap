@@ -86,6 +86,65 @@ pub async fn test_wrap_single_signer_with_defaults(env: &TestEnv) {
     .await;
 }
 
+pub async fn test_wrap_dry_run_surfaces_simulation_failure(env: &TestEnv) {
+    let unwrapped_token_program = spl_token::id();
+    let wrapped_token_program = spl_token_2022_interface::id();
+    let unwrapped_mint = create_unwrapped_mint(env, &unwrapped_token_program).await;
+    execute_create_mint(env, &unwrapped_mint, &wrapped_token_program).await;
+
+    let unwrapped_token_account = create_token_account(
+        env,
+        &unwrapped_token_program,
+        &unwrapped_mint,
+        &env.payer.pubkey(),
+    )
+    .await;
+    let wrapped_mint = get_wrapped_mint_address(&unwrapped_mint, &wrapped_token_program);
+    let recipient_account = create_associated_token_account(
+        env,
+        &wrapped_token_program,
+        &wrapped_mint,
+        &env.payer.pubkey(),
+    )
+    .await;
+    let wrapped_mint_authority = get_wrapped_mint_authority(&wrapped_mint);
+    let escrow_account = create_associated_token_account(
+        env,
+        &unwrapped_token_program,
+        &unwrapped_mint,
+        &wrapped_mint_authority,
+    )
+    .await;
+
+    let output = Command::new(TOKEN_WRAP_CLI_BIN)
+        .args(vec![
+            "--dry-run".to_string(),
+            "-C".to_string(),
+            env.config_file_path.clone(),
+            "wrap".to_string(),
+            unwrapped_token_account.to_string(),
+            wrapped_token_program.to_string(),
+            "0".to_string(),
+        ])
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Transaction simulation failed"));
+    assert!(stderr.contains("ZeroWrapAmount"));
+
+    assert_result(
+        env,
+        &unwrapped_token_account,
+        0,
+        &recipient_account,
+        &escrow_account,
+        0,
+    )
+    .await;
+}
+
 pub async fn test_wrap_single_signer_with_optional_flags(env: &TestEnv) {
     // Create Mint
     let unwrapped_token_program = spl_token::id();

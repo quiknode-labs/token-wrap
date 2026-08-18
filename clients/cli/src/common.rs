@@ -2,7 +2,9 @@ use {
     crate::{config::Config, output::println_display, Error},
     clap::ArgMatches,
     solana_clap_v3_utils::keypair::pubkey_from_path,
-    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_client::{
+        nonblocking::rpc_client::RpcClient, rpc_response::RpcSimulateTransactionResult,
+    },
     solana_presigner::Presigner,
     solana_pubkey::Pubkey,
     solana_signature::Signature,
@@ -51,6 +53,7 @@ pub async fn process_transaction(
 ) -> Result<Option<Signature>, Error> {
     if config.dry_run {
         let simulation_data = config.rpc_client.simulate_transaction(&transaction).await?;
+        ensure_simulation_succeeded(&simulation_data.value)?;
 
         if config.verbose() {
             if let Some(logs) = simulation_data.value.logs {
@@ -59,10 +62,14 @@ pub async fn process_transaction(
                 }
             }
 
-            println!(
-                "\nSimulation succeeded, consumed {} compute units",
-                simulation_data.value.units_consumed.unwrap()
-            );
+            if let Some(units_consumed) = simulation_data.value.units_consumed {
+                println!(
+                    "\nSimulation succeeded, consumed {} compute units",
+                    units_consumed
+                );
+            } else {
+                println!("\nSimulation succeeded");
+            }
         } else {
             println_display(config, "Simulation succeeded".to_string());
         }
@@ -76,6 +83,21 @@ pub async fn process_transaction(
                 .await?,
         ))
     }
+}
+
+fn ensure_simulation_succeeded(simulation: &RpcSimulateTransactionResult) -> Result<(), Error> {
+    if let Some(error) = &simulation.err {
+        let mut message = format!("Transaction simulation failed: {error}");
+        if let Some(logs) = &simulation.logs {
+            if !logs.is_empty() {
+                message.push_str("\nSimulation logs:\n    ");
+                message.push_str(&logs.join("\n    "));
+            }
+        }
+        return Err(message.into());
+    }
+
+    Ok(())
 }
 
 pub async fn get_mint_for_token_account(
@@ -114,4 +136,38 @@ pub async fn assert_mint_account(
         .map_err(|e| format!("Failed to unpack as spl token mint: {:?}", e))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::ensure_simulation_succeeded,
+        solana_client::rpc_response::RpcSimulateTransactionResult,
+    };
+
+    #[test]
+    fn rejects_failed_simulation_with_rpc_logs() {
+        let simulation: RpcSimulateTransactionResult = serde_json::from_value(serde_json::json!({
+            "err": {"InstructionError": [0, {"Custom": 1}]},
+            "logs": ["Program log: Instruction: Wrap", "Program log: Error: insufficient funds"]
+        }))
+        .unwrap();
+
+        let error = ensure_simulation_succeeded(&simulation)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("Transaction simulation failed"));
+        assert!(error.contains("custom program error: 0x1"));
+        assert!(error.contains("Program log: Error: insufficient funds"));
+    }
+
+    #[test]
+    fn accepts_successful_simulation_without_optional_metrics() {
+        let simulation: RpcSimulateTransactionResult = serde_json::from_value(serde_json::json!({
+            "err": null
+        }))
+        .unwrap();
+
+        ensure_simulation_succeeded(&simulation).unwrap();
+    }
 }
