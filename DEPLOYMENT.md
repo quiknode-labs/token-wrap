@@ -1,6 +1,6 @@
 # pWrap deployment runbook
 
-This is the only supported runbook for the initial devnet deployment and every future devnet upgrade. It defines the operation but does not itself authorize a signing event; record a separate explicit approval for each deployment or upgrade. Testnet and mainnet are outside scope and are not authorized by this document.
+This is the supported runbook for the completed initial Devnet deployment and every future Devnet upgrade. It defines the operation but does not itself authorize a signing event; record a separate explicit approval for each deployment or upgrade. Mainnet has a separate [`MAINNET_RUNBOOK.md`](./MAINNET_RUNBOOK.md) and immutable [`MAINNET_DEPLOYMENT.md`](./MAINNET_DEPLOYMENT.md) record. Testnet is not deployed.
 
 ## Fixed identity
 
@@ -178,17 +178,11 @@ The deployment created the upgradeable-loader Program and ProgramData accounts. 
 
 Deployment is multi-transaction. After any timeout or ambiguous error, query pWrap at finalized commitment before retrying. If it exists, verify ProgramData, authority, slot, and live bytes and do not rerun the deploy. If pWrap is absent and the named buffer is still a valid loader buffer controlled by the approved authority, resume from that buffer. Never bulk-close authority buffers, and never close a specific buffer until the deployment state has been fully reconciled.
 
-After the initial devnet deployment reaches finalized commitment and KTEST exists, its mint authority may optionally publish pWrap as the preferred deployment. This is a separate transaction and is not part of program deployment:
-
-```bash
-spl-token-wrap \
-  --url "$PWRAP_RPC_URL" \
-  --fee-payer "$PWRAP_FEE_PAYER_KEYPAIR" \
-  set-canonical-pointer "$KTEST_MINT_ADDRESS" pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2 \
-  --mint-authority "$KTEST_MINT_AUTHORITY_KEYPAIR"
-```
-
-The CLI validates the on-chain mint authority and existing pointer account, then atomically funds only the missing rent and writes the pointer. The KTEST sponsor payer must remain distinct from the mint authority.
+`SetCanonicalPointer` is optional and requires the underlying mint authority. Never attempt it for
+an issuer-owned asset unless that issuer explicitly selects pWrap and supplies the required signer.
+K256 does not control the currently observed Circle test USDC mint-authority key, so the current
+existing-asset plan must not create its canonical pointer. Pointer absence does not prevent Wrap or
+Unwrap.
 
 ## 7. Post-deployment proof
 
@@ -198,10 +192,16 @@ After every authorized deployment or upgrade, independently verify:
 - upgrade authority equals the approved address;
 - live executable content matches the approved ELF prefix and any remaining ProgramData capacity contains only zero padding;
 - pWrap IDL and Rust/JavaScript clients derive identical PDAs;
-- `CreateMint`, `Wrap`, `Unwrap`, and every unhappy-path invariant on a valueless devnet fixture;
+- Token-2022 and ZK ElGamal proof programs are executable under their expected loaders, and the ZK
+  enable/temporary-disable/re-enable feature state permits proof execution;
+- `CreateMint`, `Wrap`, `Unwrap`, and every unhappy-path invariant against the exact approved
+  pre-existing Devnet mint; never create an underlying test mint;
 - Token-2022 confidential configuration and a complete public-wrap → confidential-deposit → confidential-transfer → withdraw → unwrap lifecycle.
 
-The current deployment and valueless KTEST evidence are recorded in [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). They do not make this distinct pWrap binary audited, production-ready, or safe for real value.
+The initial deployment and retired synthetic-fixture evidence are recorded in
+[`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). The active existing-asset gate is
+[`DEVNET_EXISTING_ASSET_TEST.md`](./DEVNET_EXISTING_ASSET_TEST.md). Neither makes this distinct
+pWrap binary audited, production-ready, or safe for real value.
 
 ## 8. Future devnet upgrades
 
@@ -230,6 +230,9 @@ Then write a named buffer and perform the same `program show`, `program dump`, b
 
 Solana CLI 4.1.0 automatically extends ProgramData when a larger approved artifact requires it; do not disable that behavior. A smaller later ELF does not shrink ProgramData: the loader copies the ELF and zero-fills the remaining capacity. Therefore, record both lengths and the full dump hash, require the dump prefix to be byte-identical to the approved ELF, and require every trailing byte to be zero. Direct dump/artifact hash equality is valid only when their lengths are equal.
 
-After the transaction reaches finalized commitment, repeat every proof in section 7, rerun the valueless KTEST lifecycle and unhappy paths, and record the transaction signature, deployment slot, authority, ProgramData address, source identity, artifact hash, full live dump hash, lengths, and result.
+After the transaction reaches finalized commitment, repeat every proof in section 7, rerun the
+currently approved exact-existing-mint lifecycle and unhappy paths, and record the transaction
+signature, deployment slot, authority, ProgramData address, source identity, artifact hash, full
+live dump hash, lengths, and result. Never create a synthetic underlying mint for this gate.
 
 Authority rotation is a separate high-risk operation. Before any rotation, prove that the new signer is recoverable and record its public address. Require both the existing and new authority signers, verify the finalized ProgramData authority afterward, and update this document in the same change. Never rotate to `None` or use a finalization option.

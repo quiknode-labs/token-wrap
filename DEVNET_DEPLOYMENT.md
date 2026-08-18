@@ -1,5 +1,11 @@
 # pWrap devnet deployment record
 
+> **Retired historical fixture:** The synthetic asset in this record is not a supported K256 asset
+> and must not be recreated, funded, sponsored, canonicalized, or reused. The addresses and
+> transactions remain here only as immutable evidence of the initial program and protocol test.
+> Current work accepts only exact underlying mints that already exist independently of K256; see
+> [`DEVNET_EXISTING_ASSET_TEST.md`](./DEVNET_EXISTING_ASSET_TEST.md).
+
 This is the public evidence record for the permanent pWrap devnet address. It records a valueless protocol experiment, not approval for real-value assets, testnet, or mainnet.
 
 ## Live program
@@ -101,4 +107,6 @@ These were simulations only. They were not submitted, produced no on-chain trans
 - The successful confidential lifecycle proves the on-chain protocol with the pinned CLI, not the intended browser-wallet signing and recovery flow.
 - Independent sealed recovery copies of both durable authority keys must be created and restore-verified outside the repository before any future upgrade ceremony. No secret or recovery location belongs in this public record.
 - A raw upgrade-authority signer can technically close or finalize the ProgramData. The permanent, upgradeable, never-close requirement remains an operator/governance invariant until authority moves to a controller that cannot authorize loader closure.
-- Testnet and mainnet remain unauthorized and were not touched.
+- Testnet and Mainnet were not touched by this Devnet ceremony. Mainnet was deployed later under a
+  separate authorization and is recorded in [`MAINNET_DEPLOYMENT.md`](./MAINNET_DEPLOYMENT.md);
+  Testnet remains undeployed.
