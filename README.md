@@ -9,23 +9,28 @@ pWrap is the k256-maintained fork of the Solana Program Token Wrap implementatio
 | Item                     | Value                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | pWrap program ID         | `pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2`                                                                                              |
-| Deployment scope         | Devnet only                                                                                                                                |
+| Deployment status        | [Live on devnet](https://explorer.solana.com/address/pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2?cluster=devnet), valueless testing only   |
+| Deployment scope         | Devnet only; testnet and mainnet are unauthorized                                                                                          |
 | Devnet genesis           | `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`                                                                                             |
+| ProgramData              | `DJ7bADfr6LxWQsyzRGJXRwieXB4CmkRioTLpMoPvMhW1`                                                                                             |
 | Devnet upgrade authority | `G1kdS4CCCKZFKzupAm9N5ZLMvx5bgfzpUx9xkmt1KxYR`                                                                                             |
+| Initial deploy slot      | `484920383`                                                                                                                                |
 | K256 fork                | <https://github.com/quiknode-labs/token-wrap>                                                                                              |
 | Upstream                 | <https://github.com/solana-program/token-wrap>                                                                                             |
 | Upstream baseline        | [`81adb66daa1405eb1568af8b74f5c30924655bd6`](https://github.com/solana-program/token-wrap/commit/81adb66daa1405eb1568af8b74f5c30924655bd6) |
 | IDL                      | [`idl.json`](./idl.json)                                                                                                                   |
 
-`pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` is the permanent devnet address. The initial deployment uses the matching program-account keypair; every later upgrade targets the literal public address and does not replace it. Testnet and mainnet deployment are outside this fork's current authorization and runbook.
+`pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2` is the permanent devnet address. The matching program-account keypair was used for the initial deployment; every later upgrade targets the literal public address and does not replace it. Testnet and mainnet deployment are outside this fork's current authorization and runbook.
+
+The initial deployment and a complete valueless KTEST public-wrap → confidential-transfer → unwrap round trip are finalized. The deployed ELF is 436,360 bytes with SHA-256 `fb64746885e19cd5a8a1f4f40c8a6dfff8183cc3d8e30b40a120a1d4dee7eb49`. See [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md) for source, transaction, account, state-transition, and negative-simulation evidence.
 
 The upstream `TwRapQCDhWkZRrDaHfZGuHxkZ91gHDRkyuzNqeU5MgR` address is not used by pWrap. Changing the program ID changes every program-derived wrapped mint, authority, backpointer, canonical pointer, and escrow address.
 
-The program-account and upgrade-authority keypairs are operator key material. They must stay outside this public repository. The program-account keypair is retained for identity recovery, but it is not the fee payer or upgrade authority and is not needed for normal devnet upgrades.
+The program-account and upgrade-authority keypairs are operator key material. They must stay outside this public repository. The program-account keypair is retained as durable identity material, but it cannot recreate a closed devnet program; it is not the fee payer or upgrade authority and is not used for devnet upgrades.
 
 ## Permanent devnet identity
 
-All Rust, IDL, JavaScript, CLI, and PDA derivations remain pinned to the pWrap address above. The supported lifecycle is initial deploy once, then upgrade that same address. A replacement program ID is not a pWrap upgrade.
+All Rust, IDL, JavaScript, CLI, and PDA derivations remain pinned to the pWrap address above. The supported lifecycle is the completed initial deployment followed only by upgrades of that same address. A replacement program ID is not a pWrap upgrade.
 
 The program must remain upgradeable, so neither deployment with `--final` nor removal of the upgrade authority is allowed. Any `solana program close` operation targeting the pWrap Program or ProgramData accounts is forbidden. `CloseStuckEscrow` is unrelated: it can close only a zero-balance token escrow ATA after validating the documented stuck-escrow conditions; it cannot close the program.
 
@@ -98,7 +103,9 @@ pnpm --dir clients/js build
 
 Unlike the upstream snapshot, the generated contract and CLI both expose `SetCanonicalPointer`. The JavaScript test is no longer a no-op: it verifies the pWrap identity, all seven discriminators, the instruction/account codecs, and a canonical-pointer PDA against an independent Solana CLI derivation.
 
-For initial deployment, future upgrades, key boundaries, artifact checks, cluster proof, and permanent-address safeguards, see [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+CLI dry runs fail closed: a simulation error returns a nonzero exit and includes the RPC simulation logs instead of producing a success-shaped transaction result.
+
+For the completed initial procedure, future upgrades, key boundaries, artifact checks, cluster proof, and permanent-address safeguards, see [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
 ## Upstream maintenance
 

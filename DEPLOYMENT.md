@@ -6,6 +6,7 @@ This is the only supported runbook for the initial devnet deployment and every f
 
 ```text
 Program ID:       pWrapnbzNPTx9aZPAp3gpxAUrs3H4QQ1GHWMPMbDba2
+ProgramData:      DJ7bADfr6LxWQsyzRGJXRwieXB4CmkRioTLpMoPvMhW1
 Devnet genesis:   EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG
 Upgrade authority G1kdS4CCCKZFKzupAm9N5ZLMvx5bgfzpUx9xkmt1KxYR
 Upstream baseline 81adb66daa1405eb1568af8b74f5c30924655bd6
@@ -16,7 +17,7 @@ SBF builder:      cargo-build-sbf 4.1.0
 SBF compiler:     platform-tools v1.54 / rustc 1.89.0
 ```
 
-The 2026-08-17 preparation build used the official Agave `v4.1.0` aarch64 macOS archive with SHA-256 `331878e4a36689faf2c5bfe769481b9506c0158e43fc553f61c7b842cfbd4a86`. That archive reports `cargo-build-sbf 4.1.0`, `platform-tools v1.54`, and SBF `rustc 1.89.0`; the repository's Rust `1.93.1` is the host toolchain, not the ELF compiler. Its candidate pWrap ELF is 436,360 bytes with SHA-256 `fb64746885e19cd5a8a1f4f40c8a6dfff8183cc3d8e30b40a120a1d4dee7eb49`. Reproduce these values from the committed source before deployment; this record alone is not authorization.
+The 2026-08-17 deployment build used the official Agave `v4.1.0` aarch64 macOS archive with SHA-256 `331878e4a36689faf2c5bfe769481b9506c0158e43fc553f61c7b842cfbd4a86`. That archive reports `cargo-build-sbf 4.1.0`, `platform-tools v1.54`, and SBF `rustc 1.89.0`; the repository's Rust `1.93.1` is the host toolchain, not the ELF compiler. Its pWrap ELF is 436,360 bytes with SHA-256 `fb64746885e19cd5a8a1f4f40c8a6dfff8183cc3d8e30b40a120a1d4dee7eb49`, and the live devnet executable is byte-identical. [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md) is the point-in-time evidence record. Reproduce and approve a new artifact before every future upgrade.
 
 The pWrap address is permanent on devnet. The matching program keypair is needed only for the first deployment. All later upgrades target the literal program ID, preserve its ProgramData relationship, and use the approved upgrade authority. The program keypair is not the payer and is not the upgrade authority.
 
@@ -124,11 +125,11 @@ Use a reviewed QuickNode endpoint. Never use a public `api.*.solana.com` endpoin
 
 The only allowed genesis hash is devnet: `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`. Stop if the observed value differs. An existing program account at the pWrap address is also a stop condition for the initial path until its owner, ProgramData, authority, slot, and ELF hash are reconciled. Testnet and mainnet endpoints must not be used with this runbook.
 
-Read-only QuickNode preflight on 2026-08-17 at finalized devnet slot `484882312` observed the expected devnet genesis hash, no account at the pWrap address, and executable Token-2022 and ZK ElGamal proof programs. Recheck all of those facts immediately before an authorized deployment.
+Read-only QuickNode preflight on 2026-08-17 at finalized devnet slot `484882312` observed the expected devnet genesis hash, no account at the pWrap address, and executable Token-2022 and ZK ElGamal proof programs. That absence was the initial-deployment gate; pWrap is now expected to exist. Before an upgrade, recheck the genesis hash, executable dependencies, live ProgramData relationship, authority, slot, and bytes.
 
-## 6. Initial devnet deployment
+## 6. Initial devnet deployment (completed; never rerun)
 
-Run only after recording explicit approval. This is the only operation that uses the program-account keypair. Do not add `--final`.
+This section records the completed initial procedure for audit and recovery. Never rerun it against the live pWrap address; use section 8 for every future change. It was the only operation that used the program-account keypair. It did not use `--final`.
 
 First write and verify a named buffer. This isolates resumable chunk writes from the final Program/ProgramData creation transaction:
 
@@ -173,7 +174,7 @@ Only after the buffer is finalized and byte-identical to the approved ELF, creat
   --output json
 ```
 
-The deployment creates the upgradeable-loader Program and ProgramData accounts. pWrap has no global configuration account and needs no separate initialization transaction. Wrapped mints, backpointers, authorities, canonical pointers, and escrows are created later and only when their corresponding instructions are invoked.
+The deployment created the upgradeable-loader Program and ProgramData accounts. pWrap has no global configuration account and needed no separate initialization transaction. Each mapping is prepared later and independently: `create-mint` funds the wrapped mint and backpointer before invoking `CreateMint`; the wrapped-mint authority is a derived address rather than a created account; `create-escrow-account` separately creates the underlying ATA; and optional `SetCanonicalPointer` initializes the canonical pointer.
 
 Deployment is multi-transaction. After any timeout or ambiguous error, query pWrap at finalized commitment before retrying. If it exists, verify ProgramData, authority, slot, and live bytes and do not rerun the deploy. If pWrap is absent and the named buffer is still a valid loader buffer controlled by the approved authority, resume from that buffer. Never bulk-close authority buffers, and never close a specific buffer until the deployment state has been fully reconciled.
 
@@ -191,7 +192,7 @@ The CLI validates the on-chain mint authority and existing pointer account, then
 
 ## 7. Post-deployment proof
 
-After an authorized deployment, independently verify:
+After every authorized deployment or upgrade, independently verify:
 
 - finalized program and ProgramData accounts;
 - upgrade authority equals the approved address;
@@ -200,7 +201,7 @@ After an authorized deployment, independently verify:
 - `CreateMint`, `Wrap`, `Unwrap`, and every unhappy-path invariant on a valueless devnet fixture;
 - Token-2022 confidential configuration and a complete public-wrap → confidential-deposit → confidential-transfer → withdraw → unwrap lifecycle.
 
-Do not describe the program as deployed, audited, production-ready, or safe for real value until the corresponding evidence exists.
+The current deployment and valueless KTEST evidence are recorded in [`DEVNET_DEPLOYMENT.md`](./DEVNET_DEPLOYMENT.md). They do not make this distinct pWrap binary audited, production-ready, or safe for real value.
 
 ## 8. Future devnet upgrades
 
